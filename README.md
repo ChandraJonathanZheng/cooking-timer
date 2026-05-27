@@ -2,7 +2,7 @@
 
 A fast, mobile-friendly cooking timer web app — works great inside the **LINE in-app browser**.
 
-**Live demo:** `https://<your-username>.github.io/<your-repo-name>/`
+**Live demo:** `https://chandrajonathanzheng.github.io/cooking-timer/`
 
 ## Features
 
@@ -28,7 +28,7 @@ A fast, mobile-friendly cooking timer web app — works great inside the **LINE 
    git add .
    git commit -m "Initial commit"
    git remote add origin https://github.com/<your-username>/<your-repo>.git
-   git push -u origin main
+   git push -u origin mainh
    ```
 
 3. **Enable GitHub Pages:**
@@ -38,7 +38,7 @@ A fast, mobile-friendly cooking timer web app — works great inside the **LINE 
 
 4. **Your app is live in ~1 minute** at:
    ```
-   https://<your-username>.github.io/<your-repo-name>/
+   https://chandrajonathanzheng.github.io/cooking-timer/
    ```
 
 5. **Share in LINE** — open the link inside LINE browser, tap the green LINE button at the bottom-right to share with friends!
