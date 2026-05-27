@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#FF6B35" />
+  <title>🍳 Cooking Timer</title>
+  <style>
+    /* ===== RESET & BASE ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary: #FF6B35;
+      --primary-dark: #E85A25;
+      --secondary: #FFF3EE;
+      --success: #2ECC71;
+      --warning: #F39C12;
+      --danger: #E74C3C;
+      --text: #2C3E50;
+      --text-muted: #7F8C8D;
+      --bg: #F8F9FA;
+      --card: #FFFFFF;
+      --border: #E8ECF0;
+      --shadow: 0 2px 12px rgba(0,0,0,0.08);
+      --radius: 16px;
+      --radius-sm: 10px;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    /* ===== HEADER ===== */
+    .header {
+      background: linear-gradient(135deg, #FF6B35 0%, #FF8C5A 100%);
+      padding: 20px 20px 24px;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 16px rgba(255,107,53,0.3);
+    }
+    .header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: white;
+      letter-spacing: -0.5px;
+    }
+    .header p {
+      font-size: 13px;
+      color: rgba(255,255,255,0.85);
+      margin-top: 4px;
+    }
+
+    /* ===== TABS ===== */
+    .tabs {
+      display: flex;
+      background: var(--card);
+      border-bottom: 2px solid var(--border);
+      position: sticky;
+      top: 80px;
+      z-index: 99;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 14px 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: -2px;
+    }
+    .tab-btn.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+    .tab-btn span { display: block; font-size: 18px; margin-bottom: 2px; }
+
+    /* ===== MAIN ===== */
+    main { padding: 16px; padding-bottom: 100px; }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* ===== SECTION TITLE ===== */
+    .section-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      margin: 20px 0 10px;
+    }
+    .section-title:first-child { margin-top: 4px; }
+
+    /* ===== PRESET GRID ===== */
+    .preset-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .preset-card {
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+    .preset-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, var(--primary), #FF8C5A);
+      opacity: 0;
+      transition: opacity 0.18s;
+    }
+    .preset-card:active { transform: scale(0.96); }
+    .preset-card.tapped::before { opacity: 0.07; }
+
+    .preset-card .emoji { font-size: 32px; display: block; margin-bottom: 6px; position: relative; z-index: 1; }
+    .preset-card .food-name { font-size: 13px; font-weight: 700; color: var(--text); position: relative; z-index: 1; line-height: 1.3; }
+    .preset-card .food-time { font-size: 12px; color: var(--primary); font-weight: 600; margin-top: 3px; position: relative; z-index: 1; }
+    .preset-card .food-desc { font-size: 11px; color: var(--text-muted); margin-top: 3px; position: relative; z-index: 1; line-height: 1.3; }
+
+    /* ===== CUSTOM TIMER ===== */
+    .custom-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      margin-top: 8px;
+    }
+    .custom-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+
+    .time-input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .time-input-group {
+      flex: 1;
+      text-align: center;
+    }
+    .time-input-group label {
+      display: block;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+    }
+    .time-input-group input[type="number"] {
+      width: 100%;
+      padding: 12px 4px;
+      font-size: 28px;
+      font-weight: 700;
+      text-align: center;
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      background: var(--bg);
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .time-input-group input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    .time-separator { font-size: 24px; font-weight: 700; color: var(--text-muted); margin-top: 18px; }
+
+    .custom-name-input {
+      width: 100%;
+      padding: 12px 14px;
+      font-size: 15px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      background: var(--bg);
+      margin-bottom: 14px;
+    }
+    .custom-name-input:focus { outline: none; border-color: var(--primary); }
+    .custom-name-input::placeholder { color: var(--text-muted); }
+
+    .btn-primary {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #FF6B35, #FF8C5A);
+      color: white;
+      font-size: 16px;
+      font-weight: 700;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 16px rgba(255,107,53,0.35);
+    }
+    .btn-primary:active { transform: scale(0.97); box-shadow: 0 2px 8px rgba(255,107,53,0.25); }
+
+    /* ===== ACTIVE TIMERS ===== */
+    .timers-list { display: flex; flex-direction: column; gap: 14px; }
+
+    .no-timers {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+    .no-timers .no-timers-emoji { font-size: 56px; display: block; margin-bottom: 12px; }
+    .no-timers p { font-size: 15px; font-weight: 500; }
+    .no-timers small { font-size: 13px; display: block; margin-top: 6px; }
+
+    .timer-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+      border-left: 5px solid var(--primary);
+      transition: all 0.3s ease;
+      animation: slideIn 0.3s ease;
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .timer-card.warning { border-left-color: var(--warning); }
+    .timer-card.danger { border-left-color: var(--danger); animation: pulse 0.8s ease infinite; }
+    .timer-card.done { border-left-color: var(--success); background: #F0FFF5; }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: var(--shadow); }
+      50% { box-shadow: 0 4px 20px rgba(231,76,60,0.3); }
+    }
+
+    .timer-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .timer-info { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+    .timer-emoji { font-size: 28px; flex-shrink: 0; }
+    .timer-name {
+      font-size: 16px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .timer-status { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+    .timer-done-text { font-size: 11px; color: var(--success); font-weight: 700; margin-top: 1px; }
+
+    .timer-actions { display: flex; gap: 8px; flex-shrink: 0; }
+    .btn-icon {
+      width: 36px;
+      height: 36px;
+      border: none;
+      border-radius: 50%;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.15s;
+    }
+    .btn-icon:active { transform: scale(0.9); }
+    .btn-pause { background: #EEF2FF; color: #5B6CF9; }
+    .btn-stop { background: #FFF0F0; color: var(--danger); }
+
+    .timer-display {
+      text-align: center;
+      font-size: 52px;
+      font-weight: 800;
+      letter-spacing: -2px;
+      color: var(--text);
+      line-height: 1;
+      margin-bottom: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+    .timer-card.warning .timer-display { color: var(--warning); }
+    .timer-card.danger .timer-display { color: var(--danger); }
+    .timer-card.done .timer-display { color: var(--success); }
+
+    /* Progress bar */
+    .progress-track {
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #FF6B35, #FF8C5A);
+      border-radius: 3px;
+      transition: width 1s linear;
+    }
+    .timer-card.warning .progress-fill { background: var(--warning); }
+    .timer-card.danger .progress-fill { background: var(--danger); }
+    .timer-card.done .progress-fill { background: var(--success); width: 100% !important; }
+
+    /* Dismiss button for done timers */
+    .btn-dismiss {
+      width: 100%;
+      margin-top: 12px;
+      padding: 10px;
+      background: var(--success);
+      color: white;
+      font-size: 14px;
+      font-weight: 700;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+    }
+    .btn-dismiss:active { opacity: 0.85; }
+
+    /* ===== TOAST NOTIFICATION ===== */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: #2C3E50;
+      color: white;
+      padding: 14px 24px;
+      border-radius: 100px;
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+      z-index: 9999;
+      transition: transform 0.3s ease;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      max-width: 90vw;
+      text-align: center;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ===== DONE ALERT OVERLAY ===== */
+    .alert-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .alert-box {
+      background: var(--card);
+      border-radius: 24px;
+      padding: 32px 24px;
+      text-align: center;
+      width: 100%;
+      max-width: 320px;
+      animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.7); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .alert-emoji { font-size: 64px; display: block; margin-bottom: 12px; animation: bounce 0.6s ease infinite alternate; }
+    @keyframes bounce {
+      from { transform: translateY(0); }
+      to { transform: translateY(-8px); }
+    }
+    .alert-title { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+    .alert-sub { font-size: 15px; color: var(--text-muted); margin-bottom: 24px; }
+
+    .alert-actions { display: flex; flex-direction: column; gap: 10px; }
+    .btn-alert-done {
+      padding: 16px;
+      background: linear-gradient(135deg, var(--success), #27AE60);
+      color: white;
+      font-size: 16px;
+      font-weight: 700;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(46,204,113,0.35);
+    }
+    .btn-alert-snooze {
+      padding: 14px;
+      background: var(--secondary);
+      color: var(--primary);
+      font-size: 14px;
+      font-weight: 700;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+    }
+
+    /* ===== BADGE ===== */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--danger);
+      color: white;
+      font-size: 10px;
+      font-weight: 800;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      position: absolute;
+      top: 6px;
+      right: 6px;
+    }
+    .tab-wrapper { position: relative; display: inline-block; }
+
+    /* ===== SHARE BUTTON ===== */
+    .share-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 52px;
+      height: 52px;
+      background: #00C300;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      font-size: 22px;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(0,195,0,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 500;
+      transition: transform 0.15s;
+    }
+    .share-btn:active { transform: scale(0.92); }
+
+    /* ===== SCROLLBAR HIDE ===== */
+    ::-webkit-scrollbar { display: none; }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <h1>🍳 Cooking Timer</h1>
+  <p>Tap any food to start timing!</p>
+</header>
+
+<nav class="tabs">
+  <button class="tab-btn active" data-tab="presets" onclick="switchTab('presets')">
+    <span>🍽️</span> Presets
+  </button>
+  <button class="tab-btn" data-tab="custom" onclick="switchTab('custom')">
+    <span>⏱️</span> Custom
+  </button>
+  <button class="tab-btn" data-tab="active" onclick="switchTab('active')" id="activeTabBtn">
+    <div class="tab-wrapper">
+      <span>🔔</span> Timers
+      <span class="badge" id="timerBadge" style="display:none">0</span>
+    </div>
+  </button>
+</nav>
+
+<main>
+  <!-- PRESETS TAB -->
+  <div class="tab-content active" id="tab-presets">
+    <p class="section-title">🥚 Eggs</p>
+    <div class="preset-grid">
+      <div class="preset-card" onclick="startPreset(this)" data-emoji="🥚" data-name="Soft Boiled Egg" data-mins="6" data-secs="0" data-desc="Runny yolk">
+        <span class="emoji">🥚</span>
+        <span class="food-name">Soft Boiled Egg</span>
+        <span class="food-time">6 min</span>
+        <span class="food-desc">Runny yolk</span>
+      </div>
+      <div class="preset-card" onclick="startPreset(this)" data-emoji="🥚" data-name="Hard Boiled Egg" data-mins="10" data-secs="0" data-desc="Fully set yolk">
+        <span class="emoji">🥚</span>
+        <span class="food-name">Hard Boiled Egg</span>
+        <span class="food-time">10 min</span>
+        <span class="food-desc">Fully set yolk</span>
+      </div>
+      <div class="preset-card" onclick="startPreset(this)" data-emoji="🍳" data-name="Fried Egg" data-mins="3" data-secs="0" data-desc="Sunny side up">
+        <span class="emoji">🍳</span>
+        <span class="food-name">Fried Egg</span>
+        <span class="food-time">3 min</span>
+        <span class="food-desc">Sunny side up</span>
+      </div>
+      <div class="preset-card" onclick="startPreset(this)" data-emoji="🍳" data-name="Scrambled Egg" data-mins="4" data-secs="0" data-desc="Fluffy & creamy">
+        <span class="emoji">🍳</span>
+        <span class="food-name">Scrambled Egg</span>
+        <span class="food-time">4 min</span>
+        <span class="food-desc">Fluffy & creamy</span>
+      </div>
+    </div>
+
+    <p class="section-title">🍗 Meat & Poultry</p>
+    <div class="preset-grid">
+      <div class="preset-card" onclick="startPreset(this)" data-emoji="🍗" data-name="Chicken Breast" data-mins="20" data-secs="0" data-desc="Pan or oven">
+        <span class="emoji">🍗</span>
+        <span class="food-name">Chicken Breast</span>
+        <span class="food-time">20 min</span>
+        <span class="food-desc">Pan or oven</span>
+      </div>
+      <div class="preset-card" onclick="startPreset(this)" data-emoji="🍗" data-name="Chicken Thigh" data-mins="25" data-secs="0" data-desc="Bone-in, pan">
+        <span class="emoji">🍗</span>
+        <span class="food-name">Chicken Thigh</span>
+        <span class="food-time">25 min</span>
+        <span class="food-desc">Bone-in, pan</span>
+      </div>
+      <div class="preset-card" onclick="startPreset(this)" data-emoji="🥩" data-name="Steak (Medium)" data-mins="8" data-secs="0" data-desc="Flip halfway">
+        <span class="emoji">🥩</span>
+        <span class="food-name">Steak (Medium)</span>
+        <span class="food-time">8 min</span>
+        <span class="food-desc">Flip halfway</span>
+      </div>
+      <div class="preset-card" onclick="startPreset(this)" data-emoji="🥩" data-name="Steak (Well)" data-mins="12" data-secs="0" data-desc="Flip halfway">
+        <span class="emoji">🥩</span>
+        <span class="food-name">Steak (Well Done)</span>
+        <span class="food-time">12 min</span>
+        <span class="food-desc">Flip halfway</span>
+      </div>
+      <div class="preset-card" onclick="startPreset(this)" data-emoji="🍖" data-name="Pork Chops" data-mins="14" data-secs="0" data-desc="Medium heat">
+        <span class="emoji">🍖</span>
+        <span class="food-name">Pork Chops</span>
+        <span class="food-time">14 min</span>
+        <span class="food-desc">Medium heat</span>
+      </div>
+      <div class="preset-card" onclick="startPreset(this)" data-emoji="🥓" data-name="Bacon" data-mins="8" data-secs="0" data-desc="Crispy strips">
+        <span class="emoji">🥓</span>
+        <span class="food-name">Bacon</span>
+        <span class="food-time">8 min</span>
+        <span class="food-desc">Crispy strips</span>
+      </div>
+    </div>
+
+    <p class="section-title">🐟 Seafood</p>
+    <div class="preset-grid">
+      <div class="preset-card" onclick="startPreset(this)" data-emoji="🐟" data-name="Salmon Fillet" data-mins="12" data-secs="0" data-desc="Medium heat pan">
+        <span class="emoji">🐟</span>
+        <span class="food-name">Salmon Fillet</span>
+        <span class="food-time">12 min</span>
+        <span class="food-desc">Medium heat pan</span>
+      </div>
+      <div class="preset-card" onclick="startPreset(this)" data-emoji="🦐" data-name="Shrimp / Prawns" data-mins="4" data-secs="0" data-desc="Until pink & curled">
+        <span class="emoji">🦐</span>
+        <span class="food-name">Shrimp / Prawns</span>
+        <span class="food-time">4 min</span>
+        <span class="food-desc">Until pink & curled</span>
+      </div>
+      <div class="preset-card" onclick="startPreset(this)" data-emoji="🐙" data-name="Squid / Calamari" data-mins="3" data-secs="0" data-desc="Quick sauté">
+        <span class="emoji">🐙</span>
+        <span class="food-name">Squid / Calamari</span>
+        <span class="food-time">3 min</span>
+        <span class="food-desc">Quick sauté</span>
+      </div>
+      <div class="preset-card" onclick="startPreset(this)" data-emoji="🐠" data-name="White Fish" data-mins="10" data-secs="0" data-desc="Cod, tilapia, etc.">
+        <span class="emoji">🐠</span>
+        <span class="food-name">White Fish</span>
+        <span class="food-time">10 min</span>
+        <span class="food-desc">Cod, tilapia, etc.</span>
+      </div>
+    </div>
+
+    <p class="section-title">🍜 Pasta & Grains</p>
+    <div class="preset-grid">
+      <div class="preset-card" onclick="startPreset(this)" data-emoji="🍝" data-name="Spaghetti / Pasta" data-mins="10" data-secs="0" data-desc="Al dente">
+        <span class="emoji">🍝</span>
+        <span class="food-name">Spaghetti / Pasta</span>
+        <span class="food-time">10 min</span>
+        <span class="food-desc">Al dente</span>
+      </div>
+      <div class="preset-card" onclick="startPreset(this)" data-emoji="🍚" data-name="White Rice" data-mins="18" data-secs="0" data-desc="Absorption method">
+        <span class="emoji">🍚</span>
+        <span class="food-name">White Rice</span>
+        <span class="food-time">18 min</span>
+        <span class="food-desc">Absorption method</span>
+      </div>
+      <div class="preset-card" onclick="startPreset(this)" data-emoji="🍚" data-name="Brown Rice" data-mins="40" data-secs="0" data-desc="Absorption method">
+        <span class="emoji">🍚</span>
+        <span class="food-name">Brown Rice</span>
+        <span class="food-time">40 min</span>
+        <span class="food-desc">Absorption method</span>
+      </div>
+      <div class="preset-card" onclick="startPreset(this)" data-emoji="🍜" data-name="Instant Noodles" data-mins="3" data-secs="0" data-desc="Boiling water">
+        <span class="emoji">🍜</span>
+        <span class="food-name">Instant Noodles</span>
+        <span class="food-time">3 min</span>
+        <span class="food-desc">Boiling water</span>
+      </div>
+    </div>
+
+    <p class="section-title">🥦 Vegetables</p>
+    <div class="preset-grid">
+      <div class="preset-card" onclick="startPreset(this)" data-emoji="🥦" data-name="Broccoli" data-mins="5" data-secs="0" data-desc="Steamed, tender">
+        <span class="emoji">🥦</span>
+        <span class="food-name">Broccoli</span>
+        <span class="food-time">5 min</span>
+        <span class="food-desc">Steamed, tender</span>
+      </div>
+      <div class="preset-card" onclick="startPreset(this)" data-emoji="🥕" data-name="Carrots" data-mins="8" data-secs="0" data-desc="Sliced, steamed">
+        <span class="emoji">🥕</span>
+        <span class="food-name">Carrots</span>
+        <span class="food-time">8 min</span>
+        <span class="food-desc">Sliced, steamed</span>
+      </div>
+      <div class="preset-card" onclick="startPreset(this)" data-emoji="🥔" data-name="Potato (Boiled)" data-mins="20" data-secs="0" data-desc="Cubed, fork-tender">
+        <span class="emoji">🥔</span>
+        <span class="food-name">Potato (Boiled)</span>
+        <span class="food-time">20 min</span>
+        <span class="food-desc">Cubed, fork-tender</span>
+      </div>
+      <div class="preset-card" onclick="startPreset(this)" data-emoji="🌽" data-name="Corn on Cob" data-mins="10" data-secs="0" data-desc="Boiled">
+        <span class="emoji">🌽</span>
+        <span class="food-name">Corn on Cob</span>
+        <span class="food-time">10 min</span>
+        <span class="food-desc">Boiled</span>
+      </div>
+      <div class="preset-card" onclick="startPreset(this)" data-emoji="🍄" data-name="Mushrooms" data-mins="5" data-secs="0" data-desc="Sautéed golden">
+        <span class="emoji">🍄</span>
+        <span class="food-name">Mushrooms</span>
+        <span class="food-time">5 min</span>
+        <span class="food-desc">Sautéed golden</span>
+      </div>
+      <div class="preset-card" onclick="startPreset(this)" data-emoji="🧅" data-name="Onions" data-mins="7" data-secs="0" data-desc="Caramelized">
+        <span class="emoji">🧅</span>
+        <span class="food-name">Caramelized Onion</span>
+        <span class="food-time">7 min</span>
+        <span class="food-desc">Medium heat</span>
+      </div>
+    </div>
+
+    <p class="section-title">🥐 Baked & Snacks</p>
+    <div class="preset-grid">
+      <div class="preset-card" onclick="startPreset(this)" data-emoji="🍞" data-name="Toast" data-mins="2" data-secs="0" data-desc="In toaster">
+        <span class="emoji">🍞</span>
+        <span class="food-name">Toast</span>
+        <span class="food-time">2 min</span>
+        <span class="food-desc">In toaster</span>
+      </div>
+      <div class="preset-card" onclick="startPreset(this)" data-emoji="🥐" data-name="Croissant Warm" data-mins="5" data-secs="0" data-desc="Oven 170°C">
+        <span class="emoji">🥐</span>
+        <span class="food-name">Croissant (Warm)</span>
+        <span class="food-time">5 min</span>
+        <span class="food-desc">Oven 170°C</span>
+      </div>
+      <div class="preset-card" onclick="startPreset(this)" data-emoji="🍕" data-name="Frozen Pizza" data-mins="15" data-secs="0" data-desc="Oven 200°C">
+        <span class="emoji">🍕</span>
+        <span class="food-name">Frozen Pizza</span>
+        <span class="food-time">15 min</span>
+        <span class="food-desc">Oven 200°C</span>
+      </div>
+      <div class="preset-card" onclick="startPreset(this)" data-emoji="🧇" data-name="Waffle" data-mins="5" data-secs="0" data-desc="Waffle iron">
+        <span class="emoji">🧇</span>
+        <span class="food-name">Waffle</span>
+        <span class="food-time">5 min</span>
+        <span class="food-desc">Waffle iron</span>
+      </div>
+    </div>
+
+    <p class="section-title">☕ Drinks</p>
+    <div class="preset-grid">
+      <div class="preset-card" onclick="startPreset(this)" data-emoji="🍵" data-name="Green Tea" data-mins="2" data-secs="0" data-desc="Steep time">
+        <span class="emoji">🍵</span>
+        <span class="food-name">Green Tea</span>
+        <span class="food-time">2 min</span>
+        <span class="food-desc">Steep time</span>
+      </div>
+      <div class="preset-card" onclick="startPreset(this)" data-emoji="☕" data-name="Black Tea" data-mins="4" data-secs="0" data-desc="Strong brew">
+        <span class="emoji">☕</span>
+        <span class="food-name">Black Tea</span>
+        <span class="food-time">4 min</span>
+        <span class="food-desc">Strong brew</span>
+      </div>
+      <div class="preset-card" onclick="startPreset(this)" data-emoji="🫖" data-name="Herbal Tea" data-mins="5" data-secs="0" data-desc="Full flavor">
+        <span class="emoji">🫖</span>
+        <span class="food-name">Herbal Tea</span>
+        <span class="food-time">5 min</span>
+        <span class="food-desc">Full flavor</span>
+      </div>
+      <div class="preset-card" onclick="startPreset(this)" data-emoji="☕" data-name="French Press" data-mins="4" data-secs="0" data-desc="Brew time">
+        <span class="emoji">☕</span>
+        <span class="food-name">French Press</span>
+        <span class="food-time">4 min</span>
+        <span class="food-desc">Coffee brew time</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CUSTOM TAB -->
+  <div class="tab-content" id="tab-custom">
+    <div class="custom-card">
+      <h3>⏱️ Set Custom Timer</h3>
+      <input class="custom-name-input" id="customName" type="text" placeholder="What are you cooking? (optional)" maxlength="40" />
+      <div class="time-input-row">
+        <div class="time-input-group">
+          <label>Hours</label>
+          <input type="number" id="customHours" min="0" max="23" value="0" inputmode="numeric" />
+        </div>
+        <span class="time-separator">:</span>
+        <div class="time-input-group">
+          <label>Minutes</label>
+          <input type="number" id="customMins" min="0" max="59" value="5" inputmode="numeric" />
+        </div>
+        <span class="time-separator">:</span>
+        <div class="time-input-group">
+          <label>Seconds</label>
+          <input type="number" id="customSecs" min="0" max="59" value="0" inputmode="numeric" />
+        </div>
+      </div>
+      <button class="btn-primary" onclick="startCustomTimer()">▶ Start Timer</button>
+    </div>
+
+    <p class="section-title" style="margin-top: 28px">💡 Quick Custom</p>
+    <div class="preset-grid">
+      <div class="preset-card" onclick="startPreset(this)" data-emoji="⏱️" data-name="1 Minute" data-mins="1" data-secs="0" data-desc="Quick task">
+        <span class="emoji">⏱️</span>
+        <span class="food-name">1 Minute</span>
+        <span class="food-time">1 min</span>
+        <span class="food-desc">Quick task</span>
+      </div>
+      <div class="preset-card" onclick="startPreset(this)" data-emoji="⏱️" data-name="5 Minutes" data-mins="5" data-secs="0" data-desc="Short break">
+        <span class="emoji">⏱️</span>
+        <span class="food-name">5 Minutes</span>
+        <span class="food-time">5 min</span>
+        <span class="food-desc">Short break</span>
+      </div>
+      <div class="preset-card" onclick="startPreset(this)" data-emoji="⏱️" data-name="15 Minutes" data-mins="15" data-secs="0" data-desc="Resting meat">
+        <span class="emoji">⏱️</span>
+        <span class="food-name">15 Minutes</span>
+        <span class="food-time">15 min</span>
+        <span class="food-desc">Resting meat</span>
+      </div>
+      <div class="preset-card" onclick="startPreset(this)" data-emoji="⏱️" data-name="30 Minutes" data-mins="30" data-secs="0" data-desc="Marinating">
+        <span class="emoji">⏱️</span>
+        <span class="food-name">30 Minutes</span>
+        <span class="food-time">30 min</span>
+        <span class="food-desc">Marinating</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACTIVE TIMERS TAB -->
+  <div class="tab-content" id="tab-active">
+    <div class="timers-list" id="timersList">
+      <div class="no-timers" id="noTimers">
+        <span class="no-timers-emoji">⏳</span>
+        <p>No active timers</p>
+        <small>Tap a food in Presets to start cooking!</small>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Share via LINE button -->
+<button class="share-btn" onclick="shareViaLine()" title="Share on LINE">
+  <svg width="26" height="26" viewBox="0 0 36 36" fill="none">
+    <ellipse cx="18" cy="17" rx="14" ry="12" fill="white"/>
+    <text x="18" y="22" text-anchor="middle" font-size="14" font-weight="900" fill="#00C300">LINE</text>
+  </svg>
+</button>
+
+<!-- Toast notification -->
+<div class="toast" id="toast"></div>
+
+<!-- Done alert overlay (dynamically inserted) -->
+
+<script>
+// ===================================================
+// STATE
+// ===================================================
+let timers = {};     // id -> timer object
+let timerCount = 0;
+let alertQueue = []; // ids waiting to show alert
+
+// ===================================================
+// TAB SWITCHING
+// ===================================================
+function switchTab(name) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.querySelector('[data-tab="' + name + '"]').classList.add('active');
+}
+
+// ===================================================
+// AUDIO - Web Audio API (no external files needed)
+// ===================================================
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  return audioCtx;
+}
+
+function beep(frequency, duration, type = 'sine', volume = 0.4) {
+  try {
+    const ctx = getAudioCtx();
+    if (ctx.state === 'suspended') ctx.resume();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = type;
+    osc.frequency.setValueAtTime(frequency, ctx.currentTime);
+    gain.gain.setValueAtTime(volume, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + duration);
+  } catch(e) {}
+}
+
+function playDoneSound() {
+  beep(523, 0.15, 'sine');
+  setTimeout(() => beep(659, 0.15, 'sine'), 160);
+  setTimeout(() => beep(784, 0.15, 'sine'), 320);
+  setTimeout(() => beep(1047, 0.35, 'sine', 0.6), 480);
+}
+
+function playTickSound() {
+  beep(800, 0.04, 'square', 0.1);
+}
+
+function vibrate(pattern) {
+  if ('vibrate' in navigator) navigator.vibrate(pattern);
+}
+
+// ===================================================
+// START PRESET TIMER
+// ===================================================
+function startPreset(card) {
+  card.classList.add('tapped');
+  setTimeout(() => card.classList.remove('tapped'), 200);
+
+  const emoji = card.dataset.emoji;
+  const name = card.dataset.name;
+  const mins = parseInt(card.dataset.mins) || 0;
+  const secs = parseInt(card.dataset.secs) || 0;
+  const totalSecs = mins * 60 + secs;
+
+  createTimer(emoji, name, totalSecs);
+  showToast('⏱️ ' + name + ' timer started!');
+  switchTab('active');
+}
+
+// ===================================================
+// START CUSTOM TIMER
+// ===================================================
+function startCustomTimer() {
+  const name = document.getElementById('customName').value.trim() || 'Custom Timer';
+  const hours = parseInt(document.getElementById('customHours').value) || 0;
+  const mins = parseInt(document.getElementById('customMins').value) || 0;
+  const secs = parseInt(document.getElementById('customSecs').value) || 0;
+  const totalSecs = hours * 3600 + mins * 60 + secs;
+
+  if (totalSecs <= 0) {
+    showToast('⚠️ Please set a time greater than 0');
+    return;
+  }
+
+  createTimer('⏱️', name, totalSecs);
+  showToast('⏱️ ' + name + ' started!');
+  switchTab('active');
+}
+
+// ===================================================
+// CREATE & MANAGE TIMERS
+// ===================================================
+function createTimer(emoji, name, totalSecs) {
+  timerCount++;
+  const id = 'timer_' + timerCount;
+
+  const timer = {
+    id,
+    emoji,
+    name,
+    totalSecs,
+    remaining: totalSecs,
+    running: true,
+    interval: null,
+    done: false
+  };
+
+  timers[id] = timer;
+  renderTimer(id);
+  timer.interval = setInterval(() => tickTimer(id), 1000);
+  updateBadge();
+}
+
+function tickTimer(id) {
+  const t = timers[id];
+  if (!t || !t.running) return;
+
+  t.remaining--;
+
+  // Tick sound for last 10 seconds
+  if (t.remaining > 0 && t.remaining <= 10) {
+    playTickSound();
+    vibrate(30);
+  }
+
+  if (t.remaining <= 0) {
+    t.remaining = 0;
+    t.running = false;
+    t.done = true;
+    clearInterval(t.interval);
+    playDoneSound();
+    vibrate([200, 100, 200, 100, 400]);
+    updateTimerCard(id);
+    updateBadge();
+    queueAlert(id);
+    return;
+  }
+
+  updateTimerCard(id);
+}
+
+function togglePause(id) {
+  const t = timers[id];
+  if (!t || t.done) return;
+  t.running = !t.running;
+  const btn = document.querySelector('#timer_' + id + ' .btn-pause');
+  if (btn) btn.textContent = t.running ? '⏸' : '▶️';
+}
+
+function stopTimer(id) {
+  const t = timers[id];
+  if (!t) return;
+  clearInterval(t.interval);
+  // Remove from alert queue and close any open overlay for this timer
+  alertQueue = alertQueue.filter(qid => qid !== id);
+  const overlay = document.getElementById('alert_' + id);
+  if (overlay) overlay.remove();
+  delete timers[id];
+  const card = document.getElementById('timer_' + id);
+  if (card) {
+    card.style.opacity = '0';
+    card.style.transform = 'translateX(-20px)';
+    card.style.transition = 'all 0.3s ease';
+    setTimeout(() => {
+      card.remove();
+      checkNoTimers();
+    }, 300);
+  }
+  updateBadge();
+}
+
+function snoozeTimer(id) {
+  const t = timers[id];
+  if (!t) return;
+  clearInterval(t.interval); // defensive clear before creating new interval
+  t.remaining = 60; // 1 min snooze
+  t.done = false;
+  t.running = true;
+  t.interval = setInterval(() => tickTimer(id), 1000);
+  updateTimerCard(id);
+  updateBadge();
+  showToast('💤 Snoozed for 1 minute');
+}
+
+// ===================================================
+// RENDER TIMER CARD
+// ===================================================
+function renderTimer(id) {
+  const t = timers[id];
+  const list = document.getElementById('timersList');
+  const noTimers = document.getElementById('noTimers');
+  if (noTimers) noTimers.style.display = 'none';
+
+  const card = document.createElement('div');
+  card.className = 'timer-card';
+  card.id = 'timer_' + id;
+  card.innerHTML = buildTimerHTML(t);
+  list.appendChild(card);
+}
+
+function buildTimerHTML(t) {
+  const timeStr = formatTime(t.remaining);
+  const pct = t.done ? 100 : Math.max(0, ((t.totalSecs - t.remaining) / t.totalSecs) * 100);
+
+  return `
+    <div class="timer-top">
+      <div class="timer-info">
+        <span class="timer-emoji">${t.emoji}</span>
+        <div>
+          <div class="timer-name">${escapeHTML(t.name)}</div>
+          ${t.done
+            ? '<div class="timer-done-text">✅ Done! Ready to serve</div>'
+            : `<div class="timer-status">${t.running ? 'Cooking...' : '⏸ Paused'}</div>`}
+        </div>
+      </div>
+      <div class="timer-actions">
+        ${!t.done ? `<button class="btn-icon btn-pause" onclick="togglePause('${t.id}')">${t.running ? '⏸' : '▶️'}</button>` : ''}
+        <button class="btn-icon btn-stop" onclick="stopTimer('${t.id}')">✕</button>
+      </div>
+    </div>
+    <div class="timer-display">${timeStr}</div>
+    <div class="progress-track">
+      <div class="progress-fill" style="width:${pct}%"></div>
+    </div>
+    ${t.done ? `<button class="btn-dismiss" onclick="stopTimer('${t.id}')">✅ Dismiss</button>` : ''}
+  `;
+}
+
+function updateTimerCard(id) {
+  const t = timers[id];
+  const card = document.getElementById('timer_' + id);
+  if (!card) return;
+
+  // Update class
+  card.className = 'timer-card';
+  if (t.done) {
+    card.classList.add('done');
+  } else if (t.remaining <= 10) {
+    card.classList.add('danger');
+  } else if (t.remaining <= 60) {
+    card.classList.add('warning');
+  }
+
+  card.innerHTML = buildTimerHTML(t);
+}
+
+// Fix: status text uses JS runtime, not template literal in string
+document.addEventListener('click', e => {
+  // handled via inline onclick
+});
+
+// ===================================================
+// ALERT OVERLAY
+// ===================================================
+function queueAlert(id) {
+  alertQueue.push(id);
+  if (alertQueue.length === 1) showNextAlert();
+}
+
+function showNextAlert() {
+  if (alertQueue.length === 0) return;
+  const id = alertQueue[0];
+  const t = timers[id];
+  if (!t) { alertQueue.shift(); showNextAlert(); return; }
+
+  const overlay = document.createElement('div');
+  overlay.className = 'alert-overlay';
+  overlay.id = 'alert_' + id;
+  overlay.innerHTML = `
+    <div class="alert-box">
+      <span class="alert-emoji">${t.emoji}</span>
+      <div class="alert-title">${escapeHTML(t.name)}</div>
+      <div class="alert-sub">Your food is ready! 🎉</div>
+      <div class="alert-actions">
+        <button class="btn-alert-done" onclick="dismissAlert('${id}', false)">✅ Got it!</button>
+        <button class="btn-alert-snooze" onclick="dismissAlert('${id}', true)">💤 Snooze 1 min</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+function dismissAlert(id, snooze) {
+  const overlay = document.getElementById('alert_' + id);
+  if (overlay) overlay.remove();
+  alertQueue.shift();
+  if (snooze) snoozeTimer(id);
+  setTimeout(showNextAlert, 300);
+}
+
+// ===================================================
+// HELPERS
+// ===================================================
+function formatTime(secs) {
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  const s = secs % 60;
+  if (h > 0) {
+    return pad(h) + ':' + pad(m) + ':' + pad(s);
+  }
+  return pad(m) + ':' + pad(s);
+}
+
+function pad(n) { return String(n).padStart(2, '0'); }
+
+function escapeHTML(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function checkNoTimers() {
+  const list = document.getElementById('timersList');
+  if (Object.keys(timers).length === 0) {
+    if (!document.getElementById('noTimers')) {
+      const div = document.createElement('div');
+      div.className = 'no-timers';
+      div.id = 'noTimers';
+      div.innerHTML = '<span class="no-timers-emoji">⏳</span><p>No active timers</p><small>Tap a food in Presets to start cooking!</small>';
+      list.appendChild(div);
+    } else {
+      document.getElementById('noTimers').style.display = '';
+    }
+  }
+}
+
+function updateBadge() {
+  const running = Object.values(timers).filter(t => !t.done).length;
+  const total = Object.keys(timers).length;
+  const badge = document.getElementById('timerBadge');
+  if (total > 0) {
+    badge.style.display = 'flex';
+    badge.textContent = total;
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toast._timeout);
+  toast._timeout = setTimeout(() => toast.classList.remove('show'), 2800);
+}
+
+// ===================================================
+// SHARE VIA LINE
+// ===================================================
+function shareViaLine() {
+  const url = encodeURIComponent(window.location.href);
+  const text = encodeURIComponent('🍳 Check out this handy Cooking Timer! Set timers for any food easily. ');
+  const lineUrl = 'https://line.me/R/msg/text/?' + text + url;
+  // Use location.href instead of window.open to avoid popup blockers in LINE iOS browser
+  window.location.href = lineUrl;
+}
+
+// ===================================================
+// PAGE VISIBILITY — keep timers accurate on resume
+// ===================================================
+let hiddenAt = null;
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    hiddenAt = Date.now();
+  } else if (hiddenAt) {
+    const elapsed = Math.floor((Date.now() - hiddenAt) / 1000);
+    hiddenAt = null;
+    Object.keys(timers).forEach(id => {
+      const t = timers[id];
+      if (t.running && !t.done) {
+        t.remaining = Math.max(0, t.remaining - elapsed);
+        if (t.remaining === 0) {
+          t.done = true;
+          t.running = false;
+          clearInterval(t.interval);
+          playDoneSound();
+          vibrate([200, 100, 200, 100, 400]);
+          queueAlert(id);
+        }
+        updateTimerCard(id);
+      }
+    });
+    updateBadge();
+  }
+});
+
+// Prevent number input scroll change on mobile
+document.querySelectorAll('input[type=number]').forEach(inp => {
+  inp.addEventListener('wheel', e => e.preventDefault(), { passive: false });
+});
+
+// Unlock AudioContext on first user gesture — REQUIRED for iOS Safari & LINE iOS browser.
+// iOS suspends AudioContext if created outside a user gesture, and won't resume it from
+// setInterval callbacks. This one-time touchstart handler unblocks it.
+document.addEventListener('touchstart', function unlockAudio() {
+  try { getAudioCtx().resume(); } catch(e) {}
+  document.removeEventListener('touchstart', unlockAudio);
+}, { once: true });
+</script>
+</body>
+</html>
